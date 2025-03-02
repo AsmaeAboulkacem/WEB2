@@ -1,6 +1,9 @@
 <?php 
+include 'db.php';
 
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Validate age input
 if (!isset($_POST['age']) || !ctype_digit($_POST['age']) || $_POST['age'] < 1 || $_POST['age'] > 120) {
@@ -274,4 +277,129 @@ $_SESSION['cv_data'] = [
 ];
 
 
+// Vérifier si l'étudiant existe déjà
+$sql = "SELECT email FROM etudiants WHERE email = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$stmt->store_result();
+
+if ($stmt->num_rows == 0) {
+    $sql = "INSERT INTO etudiants (email, prenom, nom, telephone, age, adresse, profile, linkedin, github, photo) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,? )";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ssssisssss", $email, $firstname, $lastname, $phone, $age, $adresse, $message, $linkedin, $github, $picPath);
+    $stmt->execute();
+    $stmt->close();
+
+}
+
+// Insertion des projets
+$projects = $_POST['projectNames'] ?? [];
+$projectDesc = $_POST['projectDescriptions'] ?? [];
+$projectStartDate = $_POST['projectStartDates'] ?? [];
+$projectEndDate = $_POST['projectEndDates'] ?? [];
+
+for ($i = 0; $i < count($projects); $i++) {
+    $nbr_projet = $i + 1;
+
+    $sql = "INSERT INTO projets (email, nbr_projet, titre, description, date_debut, date_fin) VALUES (?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sissss", $email,$nbr_projet,  $projects[$i], $projectDesc[$i], $projectStartDate[$i], $projectEndDate[$i]);
+    $stmt->execute();
+    $stmt->close();
+}
+
+
+// Insertion des stages
+$stages = $_POST['stageNames'] ?? [];
+$stageDesc = $_POST['stageDescriptions'] ?? [];
+$stageStartDate = $_POST['stageStartDates'] ?? [];
+$stageEndDate = $_POST['stageEndDates'] ?? [];
+$stageEntreprise = $_POST['stageEntreprises'] ?? [];
+$stageLocation = $_POST['stageLocations'] ?? [];
+
+for ($i = 0; $i < count($stages); $i++) {
+    $nbr_stage = $i + 1;
+
+    $sql = "INSERT INTO stages (email, nbr_stage ,description, date_debut, date_fin, entreprise, localisation) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sisssss", $email, $nbr_stage, $stageDesc[$i], $stageStartDate[$i], $stageEndDate[$i], $stageEntreprise[$i], $stageLocation[$i]);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Insertion des expériences
+$experiences = $_POST['experienceNames'] ?? [];
+$experienceDesc = $_POST['experienceDescriptions'] ?? [];
+$experienceStartDate = $_POST['experienceStartDates'] ?? [];
+$experienceEndDate = $_POST['experienceEndDates'] ?? [];
+$experienceEntreprise = $_POST['experienceEntreprises'] ?? [];
+$experienceLocation = $_POST['experienceLocations'] ?? [];
+$experiencePosition = $_POST['experiencePositions'] ?? [];
+
+
+for ($i = 0; $i < count($experiences); $i++) {
+    $nbr_entreprise = $i + 1;
+
+    $sql = "INSERT INTO experiences (email, nbr_entreprise, entreprise, description, date_debut, date_fin, localisation, poste) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sissssss", $email, $nbr_entreprise, $experienceEntreprise[$i], $experienceDesc[$i], $experienceStartDate[$i], $experienceEndDate[$i], $experienceLocation[$i], $experiencePosition[$i]);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Insertion des compétences
+$competences = $_POST["competences"] ?? [];
+foreach ($competences as $competence) {
+    $sql = "INSERT INTO competences (email, competence) VALUES (?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $email, $competence);
+    $stmt->execute();
+    $stmt->close();
+}
+$interests = $_POST["interests"] ?? [];
+foreach ($interests as $interest) {
+    $sql = "INSERT INTO interets (email, interet) VALUES (?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $email, $interest);
+    $stmt->execute();
+    $stmt->close();
+}
+
+$niveau = $_POST["niveau"] ?? "";
+$selectedModules = $_POST["modules"] ?? [];
+
+foreach ($selectedModules as $module) {
+    $sql = "INSERT INTO formations (email, niveau, module) VALUES (?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sss", $email, $niveau, $module);
+    $stmt->execute();
+    $stmt->close();
+}
+
+
+
+// Insertion des langues
+$langues = [
+    ["langue" => $_POST["langue1"] ?? "", "niveau" => $_POST["niveau1"] ?? ""],
+    ["langue" => $_POST["langue2"] ?? "", "niveau" => $_POST["niveau2"] ?? ""],
+    ["langue" => $_POST["langue3"] ?? "", "niveau" => $_POST["niveau3"] ?? ""]
+];
+
+foreach ($langues as $langue) {
+    if (!empty($langue["langue"])) {
+        $sql = "INSERT INTO langues (email, langue, niveau) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sss", $email, $langue["langue"], $langue["niveau"]);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+
+// Fermeture de la connexion
+$conn->close();
 ?>
